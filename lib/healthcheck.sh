@@ -39,6 +39,37 @@ check_disk() {
         return 0
     fi
 }
+
+check_memory() {
+    local threashold=80
+    local mem_total mem_available mem_used usage
+
+    if [[ ! -f /proc/meminfo ]]; then
+        print_check "Memory Usage" "WARN" "Not supported on non-Linux systems"
+        return 0
+    fi
+    
+
+    mem_total=$(awk '/MemTotal/ {print $2}' /proc/meminfo)
+    mem_available=$(awk '/MemAvailable/ {print $2}' /proc/meminfo)
+
+    mem_used=$(($mem_total - $mem_available))
+    
+    usage=$(( mem_used * 100 / mem_total ))
+
+    if (( usage >= threshold )); then
+        print_check "Memory Usage" "FAIL" "${usage}% used"
+        return 1
+    elif (( usage >= threshold - 10 )); then
+        print_check "Memory Usage" "WARN" "${usage}% used"
+        return 0
+    else
+        print_check "Memory Usage" "OK" "${usage}% used"
+        return 0
+    fi
+}
+
+
 healthcheck_main() {
     echo "Running system health checks..."
     echo
@@ -46,6 +77,7 @@ healthcheck_main() {
     local failures=0
 
     check_disk || failures=$((failures+1))
+    check_memory || failures=$((failures+1))
 
     echo
     if (( failures > 0 )); then
