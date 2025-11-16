@@ -1,0 +1,53 @@
+#! /usr/bin/env bash
+
+set -euo pipefail
+
+COMMAND="${1:-}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+usage() {
+    cat <<EOF
+devops-toolkit - a collection of DevOps utilities
+
+Usage:
+    devops-toolkit <command> [options]
+
+Available commands:
+    healthcheck   Run system health checks
+    logrotate     Rotate and compress logs
+    backup        Create backup archives
+    watch         Watch for file changes
+
+Run 'devops-toolkit <command> --help' for more info.
+EOF
+}
+
+if [[ -z "$COMMAND" ]]; then
+    usage
+    exit 1
+fi
+
+
+# create a case to parse the args
+case $COMMAND in
+    healthcheck)
+        source $SCRIPT_DIR/../lib/healthcheck.sh
+        healthcheck_main
+        ;;
+    logrotate)
+        echo "logrotate stub"
+        ;;
+    backup)
+        echo "backup stup"
+        ;;
+    watch)
+        echo "watch stub"
+        ;;
+    *)
+        echo "Unknown Command: ${COMMAND}"
+        usage
+        exit 1
+        ;;
+esac
+
+
