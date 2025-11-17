@@ -100,17 +100,34 @@ check_cpu() {
     fi
 }
 
+check_process() {
+    local process="$1"
+
+    if pgrep -x "$process" >/dev/null 2>&1; then
+        print_check "Process: $process" "OK" "Running"
+        return 0
+    else
+        print_check "Process: $process" "FAIL" "Not running"
+        return 1
+    fi
+}
+
 healthcheck_main() {
     echo "Running system health checks..."
     echo
 
     local failures=0
+    local processes=("sshd" "cron" "systemd")
 
     check_disk || failures=$((failures+1))
     check_memory || failures=$((failures+1))
     check_cpu || failures=$((failures+1))
 
     echo
+
+    for proc in "${processes[@]}"; do
+        check_process "$proc" || failures=$((failures+1))
+    done
     if (( failures > 0 )); then
         echo -e "${RED}Health check failed with ${failures} issue(s).${RESET}"
         return 1
