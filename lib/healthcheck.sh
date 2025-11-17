@@ -11,13 +11,13 @@ print_check() {
 
     case $status in
         OK)
-            echo -e "[${GREEN}OK${RESET}]     $label - $message"
+            echo -e "[${GREEN}OK${RESET}]           $label - $message"
             ;;
         WARN)
             echo -e "[${YELLOW}WARNING${RESET}]     $label - $message"
             ;;
         FAIL)
-            echo -e "[${RED}FAILED${RESET}]     $label - $message"
+            echo -e "[${RED}FAILED${RESET}]         $label - $message"
             ;;
     esac
 }
@@ -69,6 +69,36 @@ check_memory() {
     fi
 }
 
+check_cpu() {
+    local threshold=80
+    local load
+
+    if [[ ! -f /proc/loadavg ]]; then
+        print_check "CPU Usage" "WARN" "Not supported on non-Linux systems"
+        return 0
+    fi
+
+    load=$(awk '{print $1}' /proc/loadavg)
+
+    local cores
+    cores=$(nproc)
+
+    local usage
+    usage=$(awk -v loads="$load" -v cores="$cores" 'BEGIN {printf "%.0f",  (loads / cores) * 100 }' )
+    echo $usage
+
+
+    if (( usage >= threshold )); then
+        print_check "CPU Load" "FAIL" "${usage}% of capacity"
+        return 1
+    elif (( usage >= threshold - 10 )); then
+        print_check "CPU Load" "WARN" "${usage}% of capacity"
+        return 0
+    else
+        print_check "CPU Load" "OK" "${usage}% of capacity"
+        return 0
+    fi
+}
 
 healthcheck_main() {
     echo "Running system health checks..."
@@ -78,6 +108,7 @@ healthcheck_main() {
 
     check_disk || failures=$((failures+1))
     check_memory || failures=$((failures+1))
+    check_cpu || failures=$((failures+1))
 
     echo
     if (( failures > 0 )); then
